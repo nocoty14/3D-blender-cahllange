@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Challenge - Multiplayer</title>
+    <style>
+        :root {
+            --primary: #6a5acd;
+            --secondary: #9370db;
+            --accent: #483d8b;
+            --light: #e6e6fa;
+            --dark: #191970;
+            --success: #4CAF50;
+            --warning: #FFA500;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark), var(--accent));
+            color: white;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        header {
+            background-color: rgba(0, 0, 0, 0.7);
+            width: 100%;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab{
+            display:inline-block;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: white;
+            background: transparent;
+            border: none;
+            transition: background 0.3s;
+            outline: none;
+        }
+
+        .active {
+            background: rgba(106, 90, 205, 0.5);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #9370db, #e6e6fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            margin: 30px auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .home-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .waiting-room {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+        
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+            width: 100%;
+        }
+        
+        .player-slot {
+            background: rgba(106, 90, 205, 0.3);
+            border: 2px dashed var(--secondary);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s;
+            height: 120px;
+            position: relative;
+        }
+        
+        .player-slot.filled {
+            background: rgba(106, 90, 205, 0.7);
+            border: 2px solid var(--light);
+            box-shadow: 0 0 15px var(--secondary);
+        }
+        
+        .player-slot.you {
+            border: 2px solid var(--success);
+            box-shadow: 0 0 15px var(--success);
+        }
+
+        .player-slot.queue {
+            background: rgba(255, 255, 0, 0.5); /* Kolor dla graczy w kolejce */
+        }
+
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--light);
+            margin-bottom: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        .player-name {
+            font-weight: bold;
+        }
+
+        .btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .challenge-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .timer {
+            font-size: 3.5rem;
+            font-family: monospace;
+            margin: 20px 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 2px solid var(--light);
+        }
+        
+        .theme-display {
+            background: rgba(106, 90, 205, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            width: 80%;
+            border-left: 5px solid var(--light);
+        }
+        
+        .theme-title {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .theme-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .requirements {
+            text-align: left;
+            margin: 20px 0;
+            width: 80%;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+            height: 10px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .completed {
+            display: none;
+            font-size: 2rem;
+            color: #7fffd4;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        /* Sekcja czatu */
+        .chat-container {
+            margin-top: 20px;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .chat-message {
+            margin: 5px 0;
+        }
+
+        .chat-input {
+            display: flex;
+            margin-top: 10px;
+        }
+
+        .chat-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--light);
+            margin-right: 10px;
+        }
+
+        .chat-input button {
+            padding: 10px;
+        }
+        
+        .upload-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed var(--light);
+            border-radius: 10px;
+            width: 80%;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(106, 90, 205, 0.5);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-label:hover {
+            background: rgba(106, 90, 205, 0.8);
+        }
+        
+        .preview-container {
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 5px;
+            border: 2px solid var(--light);
+        }
+        
+        .submissions {
+            margin-top: 30px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .submission {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .submission-image {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 5px;
+        }
+        
+        .submission-name {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .waiting-submissions {
+            color: var(--warning);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>3D Challenge - Multiplayer</h1>
+        <div>
+            <button class="tab active" id="homeTab">Strona główna</button>
+            <button class="tab" id="queueTab">3D Challenge / Queue</button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="home-screen" id="homeScreen">
+            <h2>Witamy w 3D Challenge!</h2>
+            <p>3D Challenge to gra, w której gracze rywalizują w projektowaniu modeli 3D w oparciu o ustalone tematy. Zawalcz o tytuł najlepszego twórcy!</p>
+            <p>Jak to działa?</p>
+            <ul>
+                <li>Dołącz do gry i uzyskaj temat wyzwania.</li>
+                <li>Stwórz model 3D w dowolnym oprogramowaniu.</li>
+                <li>Prześlij swój projekt przed upływem czasu.</li>
+                <li>Sprawdź, kto zyskał uznanie za swoje umiejętności!</li>
+            </ul>
+        </div>
+
+        <div class="waiting-room" id="waitingRoom">
+            <h2>Czekamy na graczy...</h2>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <p>Połączonych graczy: <span id="playersCount">0</span>/4</p>
+            
+            <div class="players-grid" id="playersGrid"></div>
+            
+            <button class="btn" id="joinBtn">Dołącz do gry</button>
+        </div>
+        
+        <div class="challenge-screen" id="challengeScreen">
+            <h2>WYZWANIE 3D</h2>
+            <div class="timer" id="timer">04:00:00</div>
+            
+            <div class="theme-display pulse">
+                <div class="theme-title" id="themeTitle">Ładowanie tematu...</div>
+                <div class="theme-description" id="themeDescription"></div>
+            </div>
+            
+            <div class="requirements">
+                <h3>Wymagania:</h3>
+                <ul>
+                    <li>Stwórz model 3D zgodny z tematem</li>
+                    <li>Użyj dowolnego oprogramowania 3D (Blender, Maya, 3ds Max, etc.)</li>
+                    <li>Prześlij wynik przed upływem czasu</li>
+                    <li>Pamiętaj o optymalizacji modelu</li>
+                </ul>
+            </div>
+            
+            <div class="upload-section">
+                <h3>Prześlij swój projekt:</h3>
+                <input type="file" id="fileInput" class="file-input" accept=".jpg,.jpeg,.png">
+                <label for="fileInput" class="file-label">Wybierz plik (JPG, PNG, JPEG)</label>
+                
+                <div class="preview-container" id="previewContainer">
+                    <img id="previewImage" class="preview-image" src="#" alt="Podgląd">
+                    <button class="btn" id="submitBtn" style="margin-top: 10px;">Potwierdź przesłanie</button>
+                </div>
+            </div>
+            
+            <div id="waitingSubmissions" class="waiting-submissions" style="display: none;">
+                Oczekiwanie na przesłanie projektów przez innych graczy...
+            </div>
+            
+            <div class="submissions" id="submissionsContainer">
+                <!-- Tutaj będą wyświetlane przesłane prace -->
+            </div>
+
+            <!-- Sekcja czatu -->
+            <div class="chat-container" id="chatContainer">
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Napisz wiadomość..." />
+                <button class="btn" id="sendChatBtn">Wyślij</button>
+            </div>
+        </div>
+        
+        <div class="completed" id="completedScreen">
+            Wyzwanie zakończone! Wyniki wkrótce...
+        </div>
+    </div>
+    
+    <script>
+        // Symulacja połączenia z serwerem multiplayer
+        class GameClient {
+            constructor() {
+                this.players = [];
+                this.currentPlayer = null;
+                this.roomId = null;
+                this.theme = null;
+                this.timerInterval = null;
+                this.submissions = {};
+                this.socket = this.simulateSocket();
+            }
+            
+            simulateSocket() {
+                return {
+                    emit: (event, data) => {
+                        console.log(`Emitting ${event}:`, data);
+                        // Symulacja odpowiedzi serwera
+                        setTimeout(() => {
+                            if (event === 'joinRoom') {
+                                this.handleJoinResponse(data);
+                            } else if (event === 'submitWork') {
+                                this.handleSubmitResponse(data);
+                            }
+                        }, 500);
+                    },
+                    on: (event, callback) => {
+                        console.log(`Listening for ${event}`);
+                    }
+                };
+            }
+            
+            handleJoinResponse(playerData) {
+                this.players.push({ ...playerData, status: "in-queue" });
+                this.currentPlayer = playerData;
+                this.roomId = 'room_' + Math.random().toString(36).substr(2, 8);
+                
+                // Losowanie tematu
+                this.theme = this.getRandomTheme();
+                
+                updateUI();
+                
+                // Symulacja pełnego pokoju po 2 sekundach
+                setTimeout(() => {
+                    startChallenge();
+                }, 2000);
+            }
+            
+            handleSubmitResponse(submission) {
+                this.submissions[submission.playerId] = submission;
+                updateSubmissions();
+                
+                // Sprawdź czy wszyscy przesłali prace
+                if (Object.keys(this.submissions).length === this.players.length) {
+                    setTimeout(() => {
+                        challengeComplete();
+                    }, 3000);
+                }
+            }
+            
+            getRandomTheme() {
+                const themes = [
+                    {
+                        title: "Futurystyczne miasto",
+                        description: "Stwórz scenę przedstawiającą futurystyczne miasto z latającymi pojazdami i wysokimi wieżowcami."
+                    },
+                    {
+                        title: "Fantastyczna postać",
+                        description: "Zaprojektuj unikalną fantastyczną postać z charakterystycznymi cechami i stylizacją."
+                    },
+                    {
+                        title: "Mechaniczny robot",
+                        description: "Wymyśl i wykonaj model mechanicznego robota z ruchomymi częściami i szczegółowym wnętrzem."
+                    },
+                    {
+                        title: "Średniowieczny zamek",
+                        description: "Odwzoruj lub wymyśl średniowieczny zamek z otoczeniem i elementami architektonicznymi z epoki."
+                    }
+                ];
+                
+                return themes[Math.floor(Math.random() * themes.length)];
+            }
+            
+            joinGame(playerName) {
+                const playerData = {
+                    id: 'player_' + Math.random().toString(36).substr(2, 8),
+                    name: playerName || `Gracz ${Math.floor(Math.random() * 1000)}`,
+                    avatar: String.fromCharCode(65 + Math.floor(Math.random() * 26))
+                };
+                
+                this.socket.emit('joinRoom', playerData);
+            }
+            
+            submitWork(imageData, fileName) {
+                const submission = {
+                    playerId: this.currentPlayer.id,
+                    playerName: this.currentPlayer.name,
+                    fileName: fileName,
+                    imageData: imageData,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.socket.emit('submitWork', submission);
+            }
+            
+            startTimer(duration, callback) {
+                let timer = duration;
+                
+                this.timerInterval = setInterval(() => {
+                    const hours = Math.floor(timer / 3600);
+                    const minutes = Math.floor((timer % 3600) / 60);
+                    const seconds = timer % 60;
+                    
+                    document.getElementById('timer').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    
+                    if (--timer < 0) {
+                        clearInterval(this.timerInterval);
+                        callback();
+                    }
+                }, 1000);
+            }
+
+            // Funkcja do wysyłania wiadomości czatu
+            sendChatMessage(message) {
+                const chatMessage = {
+                    playerName: this.currentPlayer.name,
+                    message: message,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                
+                document.getElementById('chatContainer').innerHTML += `<div class="chat-message"><strong>${chatMessage.playerName} [${chatMessage.timestamp}]:</strong> ${chatMessage.message}</div>`;
+            }
+        }
+
+        const gameClient = new GameClient();
+        
+        // Elementy UI
+        const joinBtn = document.getElementById('joinBtn');
+        const playersCount = document.getElementById('playersCount');
+        const progressBar = document.getElementById('progressBar');
+        const waitingRoom = document.getElementById('waitingRoom');
+        const challengeScreen = document.getElementById('challengeScreen');
+        const completedScreen = document.getElementById('completedScreen');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const submitBtn = document.getElementById('submitBtn');
+        const submissionsContainer = document.getElementById('submissionsContainer');
+        const waitingSubmissions = document.getElementById('waitingSubmissions');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatBtn = document.getElementById('sendChatBtn');
+        const homeScreen = document.getElementById('homeScreen');
+        const playersGrid = document.getElementById('playersGrid');
+        
+        // Zakładki
+        const homeTab = document.getElementById('homeTab');
+        const queueTab = document.getElementById('queueTab');
+
+        // Funkcje do przełączania zakładek
+        const showHomeScreen = () => {
+            homeScreen.style.display = 'flex';
+            waitingRoom.style.display = 'none';
+            challengeScreen.style.display = 'none';
+            completedScreen.style.display = 'none';
+            homeTab.classList.add('active');
+            queueTab.classList.remove('active');
+        };
+
+        const showQueueScreen = () => {
+            homeScreen.style.display = 'none';
+            waitingRoom.style.display = 'flex';
+            challengeScreen.style.display = 'none';
+            completedScreen.style.display = 'none';
+            homeTab.classList.remove('active');
+            queueTab.classList.add('active');
+        };
+
+        // Obsługa przełączania zakładek
+        homeTab.addEventListener('click', showHomeScreen);
+        queueTab.addEventListener('click', showQueueScreen);
+        
+        // Obsługa dołączania do gry
+        joinBtn.addEventListener('click', function() {
+            const playerName = prompt("Podaj swój nick:", `Gracz ${Math.floor(Math.random() * 1000)}`);
+            if (playerName) {
+                joinBtn.disabled = true;
+                gameClient.joinGame(playerName);
+            }
+        });
+        
+        // Obsługa przesyłania pliku
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Proszę wybrać plik w formacie JPG, JPEG lub PNG');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    previewImage.src = event.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Potwierdzenie przesłania pracy
+        submitBtn.addEventListener('click', function() {
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    gameClient.submitWork(event.target.result, file.name);
+                    previewContainer.style.display = 'none';
+                    fileInput.value = '';
+                    waitingSubmissions.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Proszę wybrać plik przed przesłaniem');
+            }
+        });
+
+        // Wysyłanie wiadomości czatu
+        sendChatBtn.addEventListener('click', function() {
+            const message = chatInput.value;
+            if (message) {
+                gameClient.sendChatMessage(message);
+                chatInput.value = '';
+            }
+        });
+
+        // Aktualizacja UI po dołączeniu do pokoju
+        function updateUI() {
+            playersCount.textContent = gameClient.players.length;
+            progressBar.style.width = `${(gameClient.players.length / 4) * 100}%`;
+            
+            // Aktualizacja slotów graczy
+            playersGrid.innerHTML = '';
+            gameClient.players.forEach((player, index) => {
+                const playerSlot = document.createElement('div');
+                playerSlot.className = `player-slot ${player.id === gameClient.currentPlayer.id ? 'you' : 'filled'}`;
+                playerSlot.classList.add(player.status);
+
+                const avatar = document.createElement('div');
+                avatar.className = 'player-avatar';
+                avatar.innerText = player.avatar;
+                
+                const name = document.createElement('div');
+                name.className = 'player-name';
+                name.innerText = player.name;
+                
+                const position = document.createElement('div');
+                position.className = 'position';
+                position.innerText = player.status === 'in-queue' ? `Kolejka: ${index + 1}` : '';
+                
+                playerSlot.appendChild(avatar);
+                playerSlot.appendChild(name);
+                playerSlot.appendChild(position);
+                playersGrid.appendChild(playerSlot);
+            });
+        }
+
+        // Aktualizacja przesłanych prac
+        function updateSubmissions() {
+            submissionsContainer.innerHTML = '';
+            Object.values(gameClient.submissions).forEach(submission => {
+                const submissionDiv = document.createElement('div');
+                submissionDiv.className = 'submission';
+                submissionDiv.innerHTML = `
+                    <img src="${submission.imageData}" alt="${submission.fileName}" class="submission-image" />
+                    <div class="submission-name">${submission.playerName}: ${submission.fileName}</div>
+                `;
+                submissionsContainer.appendChild(submissionDiv);
+            });
+        }
+        
+        // Zakończenie wyzwania
+        function challengeComplete() {
+            waitingRoom.style.display = 'none';
+            challengeScreen.style.display = 'none';
+            completedScreen.style.display = 'flex';
+        }
+
+        // Rozpoczęcie wyzwania
+        function startChallenge() {
+            challengeScreen.style.display = 'flex';
+            waitingRoom.style.display = 'none';
+            gameClient.startTimer(14400, challengeComplete); // 4 godziny
+            document.getElementById('themeTitle').innerText = gameClient.theme.title;
+            document.getElementById('themeDescription').innerText = gameClient.theme.description;
+        }
+
+        // Domyślnie pokazujemy stronę główną
+        showHomeScreen();
+    </script>
+</body>
+</html>
